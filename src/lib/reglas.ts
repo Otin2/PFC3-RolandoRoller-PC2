@@ -115,3 +115,17 @@ export function posicionEnMapa(lat: number, lng: number): { x: number; y: number
 export function urlOpenStreetMap(lat: number, lng: number): string {
   return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`;
 }
+
+// ---------- Aviso al vecino ----------
+export const DIAS_AVISO = 7;
+
+// Fecha desde la cual un reporte atendido todavía se avisa al vecino (últimos 7 días)
+export function fechaLimiteAviso(ahora: Date = new Date()): Date {
+  return new Date(ahora.getTime() - DIAS_AVISO * 24 * 60 * 60 * 1000);
+}
+
+// Regla: se avisa si el reporte se atendió dentro de los últimos 7 días
+export function atendidoReciente(atendidoEn: string | null, ahora: Date = new Date()): boolean {
+  if (!atendidoEn) return false;
+  return new Date(atendidoEn).getTime() >= fechaLimiteAviso(ahora).getTime();
+}

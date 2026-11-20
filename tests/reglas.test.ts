@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  atendidoReciente,
   coordenadasValidas,
   esEstadoReporte,
   esTipoReporte,
   extensionFoto,
+  fechaLimiteAviso,
   formatearMulta,
   indicadoresPorDistrito,
   multaValida,
@@ -153,5 +155,22 @@ describe("mapa de Lima Norte", () => {
     expect(urlOpenStreetMap(-11.96, -77.07)).toBe(
       "https://www.openstreetmap.org/?mlat=-11.96&mlon=-77.07#map=17/-11.96/-77.07",
     );
+  });
+});
+
+describe("aviso al vecino (últimos 7 días)", () => {
+  const ahora = new Date("2026-06-10T12:00:00Z");
+
+  it("avisa si se atendió hace 2 días", () => {
+    expect(atendidoReciente("2026-06-08T12:00:00Z", ahora)).toBe(true);
+  });
+
+  it("no avisa si se atendió hace más de 7 días o no se atendió", () => {
+    expect(atendidoReciente("2026-06-01T12:00:00Z", ahora)).toBe(false);
+    expect(atendidoReciente(null, ahora)).toBe(false);
+  });
+
+  it("la fecha límite es 7 días antes", () => {
+    expect(fechaLimiteAviso(ahora).toISOString()).toBe("2026-06-03T12:00:00.000Z");
   });
 });
