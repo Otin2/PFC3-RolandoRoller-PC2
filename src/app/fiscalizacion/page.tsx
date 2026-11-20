@@ -4,7 +4,8 @@ import { estadosReporte, tiposReporte, type EstadoReporte, type TipoReporte } fr
 import { esEstadoReporte, esTipoReporte } from "@/lib/reglas";
 import { exigirRol } from "@/lib/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { Chip, Contenedor, Encabezado, EstadoVacio, PildoraFiltro, Tarjeta } from "@/components/ui";
+import { AtenderReporte } from "@/components/AtenderReporte";
+import { Aviso, Chip, Contenedor, Encabezado, EstadoVacio, PildoraFiltro, Tarjeta } from "@/components/ui";
 
 // Arma el enlace de un filtro conservando el otro filtro
 function enlace(estado: string, tipo: string) {
@@ -20,7 +21,7 @@ function enlace(estado: string, tipo: string) {
 export default async function Bandeja({
   searchParams,
 }: {
-  searchParams: Promise<{ estado?: string; tipo?: string }>;
+  searchParams: Promise<{ estado?: string; tipo?: string; aviso?: string }>;
 }) {
   const usuario = await exigirRol(["fiscalizador", "admin"]);
   const parametros = await searchParams;
@@ -71,7 +72,8 @@ export default async function Bandeja({
         </div>
       </div>
 
-      <div className="pb-12">
+      <div className="flex flex-col gap-4 pb-12">
+        {parametros.aviso === "atendido" && <Aviso tipo="exito">El reporte quedó marcado como atendido.</Aviso>}
         {reportes.length === 0 ? (
           <EstadoVacio titulo="No hay reportes con esos filtros" descripcion="Cambia los filtros o vuelve más tarde." />
         ) : (
@@ -104,6 +106,7 @@ export default async function Bandeja({
                         <span className="font-semibold">Nota:</span> {r.nota}
                       </p>
                     )}
+                    {r.estado === "pendiente" && <AtenderReporte reporteId={r.id} volver={enlace(estado, tipo)} />}
                   </div>
                 </Tarjeta>
               </li>
