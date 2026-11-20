@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { distritos } from "./config";
-import { LIMITES_LIMA_NORTE as L } from "./reglas";
+import { LIMITES_LIMA_NORTE as L, MULTA_MAXIMA } from "./reglas";
 
 // ============================================================
 // CAPA DE NEGOCIO: esquemas Zod.
@@ -79,4 +79,31 @@ export const esquemaReporte = z.object({
       .max(L.lngMax, { error: "La ubicación debe estar en Lima Norte" }),
   ),
   distrito: esquemaDistrito,
+});
+
+// Atender un reporte: la nota es obligatoria (la BD también lo exige)
+export const esquemaAtencion = z.object({
+  reporte_id: z.coerce.number().int().positive({ error: "Reporte no válido" }),
+  nota: z
+    .string()
+    .trim()
+    .min(3, { error: "Escribe una nota de atención (mínimo 3 caracteres)" })
+    .max(300, { error: "Máximo 300 caracteres" }),
+});
+
+// Sanción sobre un reporte: acción en texto y multa en soles (0 o más)
+export const esquemaSancion = z.object({
+  reporte_id: z.coerce.number().int().positive({ error: "Reporte no válido" }),
+  accion: z
+    .string()
+    .trim()
+    .min(3, { error: "Describe la acción (mínimo 3 caracteres)" })
+    .max(200, { error: "Máximo 200 caracteres" }),
+  multa: z.preprocess(
+    vacioComoNulo,
+    z.coerce
+      .number({ error: "Ingresa la multa (puede ser 0)" })
+      .min(0, { error: "La multa no puede ser negativa" })
+      .max(MULTA_MAXIMA, { error: "Multa demasiado alta" }),
+  ),
 });
