@@ -40,3 +40,14 @@ export function erroresPorCampo(error: z.ZodError): Record<string, string> {
 
 // Distrito: debe ser uno de los 4 de Lima Norte (registro, mascotas y reportes)
 export const esquemaDistrito = z.enum(distritos, { error: "Elige un distrito" });
+
+// Mascota del vecino (tabla mascotas)
+export const esquemaMascota = z.object({
+  nombre: z
+    .string()
+    .trim()
+    .min(1, { error: "Ingresa el nombre de la mascota" })
+    .max(60, { error: "Máximo 60 caracteres" }),
+  especie: z.enum(["perro", "gato", "otro"], { error: "Elige la especie" }),
+  distrito: esquemaDistrito,
+});
