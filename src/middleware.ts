@@ -5,11 +5,11 @@ import type { Rol } from "@/lib/config";
 // Rutas protegidas y qué roles pueden entrar (vacío = cualquier usuario con sesión)
 const reglasDeAcceso: { prefijo: string; roles: Rol[] }[] = [
   { prefijo: "/admin", roles: ["admin"] },
-  { prefijo: "/tiendas", roles: ["vendedor", "admin"] },
-  { prefijo: "/productos", roles: ["vendedor", "admin"] },
-  { prefijo: "/pedidos/nuevo", roles: ["comprador"] },
-  { prefijo: "/pedidos", roles: [] },
+  { prefijo: "/fiscalizacion", roles: ["fiscalizador", "admin"] },
+  { prefijo: "/mascotas", roles: ["vecino"] },
+  { prefijo: "/reportes", roles: ["vecino"] },
   { prefijo: "/panel", roles: [] },
+  // /mapa es público: no aparece aquí
 ];
 
 export async function middleware(request: NextRequest) {

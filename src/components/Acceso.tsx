@@ -72,7 +72,7 @@ export function Acceso({ modoInicial }: { modoInicial: Modo }) {
 
       {/* Formulario del modo elegido */}
       <div key={`f-${modo}`} className="mt-8 animate-subir [animation-delay:200ms]">
-        <Tarjeta destacada>
+        <Tarjeta>
           {modo === "login" ? (
             <Formulario
               accion={iniciarSesion}
