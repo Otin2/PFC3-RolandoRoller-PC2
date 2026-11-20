@@ -8,7 +8,9 @@ import {
   indicadoresPorDistrito,
   multaValida,
   porcentajeAtendidos,
+  posicionEnMapa,
   puedeAtenderse,
+  urlOpenStreetMap,
   validarFoto,
 } from "@/lib/reglas";
 
@@ -128,5 +130,28 @@ describe("formatearMulta", () => {
   it("muestra soles con 2 decimales", () => {
     expect(formatearMulta(150)).toBe("S/ 150.00");
     expect(formatearMulta(0)).toBe("S/ 0.00");
+  });
+});
+
+describe("mapa de Lima Norte", () => {
+  it("la esquina noroeste va arriba a la izquierda y la sureste abajo a la derecha", () => {
+    expect(posicionEnMapa(-11.8, -77.2)).toEqual({ x: 0, y: 0 });
+    expect(posicionEnMapa(-12.1, -76.95)).toEqual({ x: 100, y: 100 });
+  });
+
+  it("el centro del recuadro queda en 50% y 50%", () => {
+    const centro = posicionEnMapa(-11.95, -77.075);
+    expect(centro.x).toBeCloseTo(50);
+    expect(centro.y).toBeCloseTo(50);
+  });
+
+  it("un punto fuera del recuadro se limita al borde", () => {
+    expect(posicionEnMapa(-13, -80)).toEqual({ x: 0, y: 100 });
+  });
+
+  it("arma el enlace de OpenStreetMap con las coordenadas", () => {
+    expect(urlOpenStreetMap(-11.96, -77.07)).toBe(
+      "https://www.openstreetmap.org/?mlat=-11.96&mlon=-77.07#map=17/-11.96/-77.07",
+    );
   });
 });
