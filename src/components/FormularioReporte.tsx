@@ -118,10 +118,10 @@ export function FormularioReporte({ distritoInicial }: { distritoInicial: string
         />
         <p className="text-sm text-texto-3">JPG, PNG o WebP de hasta 5 MB.</p>
         {(errorFoto || errores.foto) && <p className="text-sm text-error">{errorFoto ?? errores.foto}</p>}
-        {vista && (
+        {vista?.startsWith("blob:") && (
           // Vista previa local (blob:); no pasa por next/image
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={vista} alt="Vista previa de la foto" className="max-h-64 w-full rounded-tarjeta border border-borde-suave object-cover" />
+          <img src={encodeURI(vista)} alt="Vista previa de la foto" className="max-h-64 w-full rounded-tarjeta border border-borde-suave object-cover" />
         )}
       </div>
 
