@@ -1,60 +1,52 @@
 -- ============================================================
--- DATOS DE PRUEBA
--- PASO PREVIO: registrar estos 3 usuarios desde /registro de la app
--- (todos con la contraseña 123456):
---   test@test.com  -> rol Vendedor
---   demo@demo.com  -> rol Comprador
---   exam@exam.com  -> rol Comprador (aquí se convierte en admin)
--- Luego ejecutar este archivo en Supabase -> SQL Editor.
+-- DATOS DE PRUEBA — PataLimpia (correr UNA sola vez)
+-- PASO PREVIO: registrar en /registro (contraseña 123456 para todos):
+--   vecino@pata.com -> rol Vecino,        distrito Los Olivos
+--   fiscal@pata.com -> rol Fiscalizador,  distrito Los Olivos
+--   admin@pata.com  -> rol Vecino (aquí se convierte en admin)
 -- ============================================================
 
--- El admin no se puede elegir al registrarse: se asigna por SQL
-update public.usuarios set rol = 'admin' where email = 'exam@exam.com';
+-- El admin no se elige al registrarse: se asigna por SQL
+update public.usuarios set rol = 'admin' where email = 'admin@pata.com';
 
--- Entidad principal (ej. tiendas) del vendedor
-insert into public.tiendas (usuario_id, nombre, rubro)
-select u.id, x.nombre, x.rubro
+-- Mascotas registradas (en los 4 distritos)
+insert into public.mascotas (usuario_id, nombre, especie, distrito)
+select u.id, x.nombre, x.especie, x.distrito
 from public.usuarios u
 cross join (values
-  ('Tienda Demo 1', 'Textil'),
-  ('Tienda Demo 2', 'Calzado'),
-  ('Tienda Demo 3', 'Accesorios')
-) as x(nombre, rubro)
-where u.email = 'test@test.com';
+  ('Firulais', 'perro', 'Los Olivos'),
+  ('Michi',    'gato',  'Los Olivos'),
+  ('Rocky',    'perro', 'Comas'),
+  ('Luna',     'perro', 'San Martín de Porres'),
+  ('Pelusa',   'gato',  'Independencia'),
+  ('Toby',     'perro', 'Comas'),
+  ('Coco',     'otro',  'San Martín de Porres'),
+  ('Max',      'perro', 'Independencia')
+) as x(nombre, especie, distrito)
+where u.email = 'vecino@pata.com';
 
--- Entidad hija (ej. productos)
-insert into public.productos (tienda_id, nombre, precio, stock)
-select t.id, x.nombre, x.precio, x.stock
-from public.tiendas t
-join (values
-  ('Tienda Demo 1', 'Polo básico',   25.00, 50),
-  ('Tienda Demo 1', 'Jean clásico',  79.90, 20),
-  ('Tienda Demo 1', 'Casaca',       120.00,  8),
-  ('Tienda Demo 2', 'Zapatilla urbana', 149.90, 12),
-  ('Tienda Demo 3', 'Gorra',         19.90, 30)
-) as x(tienda, nombre, precio, stock) on x.tienda = t.nombre;
+-- Reportes de puntos críticos (algunos ya atendidos)
+insert into public.reportes (usuario_id, tipo, descripcion, lat, lng, distrito, estado, nota, atendido_por, atendido_en)
+select v.id, x.tipo, x.descripcion, x.lat, x.lng, x.distrito, x.estado,
+       case when x.estado = 'atendido' then 'Se limpió la zona y se notificó a los vecinos.' end,
+       case when x.estado = 'atendido' then f.id end,
+       case when x.estado = 'atendido' then now() - interval '1 day' end
+from public.usuarios v
+cross join public.usuarios f
+cross join (values
+  ('heces',          'Heces en la vereda frente al parque',      -11.9620, -77.0710, 'Los Olivos',            'pendiente'),
+  ('orina',          'Esquina con fuerte olor a orina',          -11.9585, -77.0752, 'Los Olivos',            'atendido'),
+  ('mascota_suelta', 'Perro suelto sin collar todas las mañanas', -11.9655, -77.0688, 'Los Olivos',            'pendiente'),
+  ('heces',          'Berma central llena de heces',              -11.9302, -77.0480, 'Comas',                 'pendiente'),
+  ('heces',          'Parque zonal sin recojo de heces',          -11.9355, -77.0545, 'Comas',                 'atendido'),
+  ('orina',          'Fachada deteriorada por orina',             -12.0015, -77.0830, 'San Martín de Porres',  'pendiente'),
+  ('mascota_suelta', 'Jauría suelta cerca del colegio',           -12.0060, -77.0790, 'San Martín de Porres',  'pendiente'),
+  ('heces',          'Vereda del mercado con heces',              -11.9905, -77.0520, 'Independencia',         'atendido')
+) as x(tipo, descripcion, lat, lng, distrito, estado)
+where v.email = 'vecino@pata.com' and f.email = 'fiscal@pata.com';
 
--- Transacción con su detalle (ej. pedido del comprador)
--- total = 2 x 25.00 + 1 x 79.90 = 129.90
-with nuevo as (
-  insert into public.pedidos (usuario_id, estado, total)
-  select id, 'confirmado', 129.90 from public.usuarios where email = 'demo@demo.com'
-  returning id
-)
-insert into public.detalle_pedido (pedido_id, producto_id, cantidad, precio_unitario)
-select nuevo.id, p.id, x.cantidad, p.precio
-from nuevo
-join public.productos p on p.nombre in ('Polo básico', 'Jean clásico')
-join (values ('Polo básico', 2), ('Jean clásico', 1)) as x(nombre, cantidad) on x.nombre = p.nombre;
-
--- Segundo pedido: 1 x 149.90 + 3 x 19.90 = 209.60
-with nuevo as (
-  insert into public.pedidos (usuario_id, estado, total)
-  select id, 'pendiente', 209.60 from public.usuarios where email = 'demo@demo.com'
-  returning id
-)
-insert into public.detalle_pedido (pedido_id, producto_id, cantidad, precio_unitario)
-select nuevo.id, p.id, x.cantidad, p.precio
-from nuevo
-join public.productos p on p.nombre in ('Zapatilla urbana', 'Gorra')
-join (values ('Zapatilla urbana', 1), ('Gorra', 3)) as x(nombre, cantidad) on x.nombre = p.nombre;
+-- Una sanción registrada sobre un reporte atendido
+insert into public.sanciones (reporte_id, fiscalizador_id, accion, multa)
+select r.id, f.id, 'Notificación al dueño por no recoger las heces', 172.00
+from public.reportes r cross join public.usuarios f
+where r.descripcion = 'Esquina con fuerte olor a orina' and f.email = 'fiscal@pata.com';
