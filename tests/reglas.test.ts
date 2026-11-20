@@ -4,6 +4,7 @@ import {
   esEstadoReporte,
   esTipoReporte,
   extensionFoto,
+  formatearMulta,
   indicadoresPorDistrito,
   multaValida,
   porcentajeAtendidos,
@@ -120,5 +121,12 @@ describe("validarFoto", () => {
     expect(extensionFoto("image/png")).toBe("png");
     expect(extensionFoto("image/webp")).toBe("webp");
     expect(extensionFoto("image/jpeg")).toBe("jpg");
+  });
+});
+
+describe("formatearMulta", () => {
+  it("muestra soles con 2 decimales", () => {
+    expect(formatearMulta(150)).toBe("S/ 150.00");
+    expect(formatearMulta(0)).toBe("S/ 0.00");
   });
 });

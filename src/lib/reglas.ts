@@ -93,3 +93,8 @@ export function indicadoresPorDistrito(
     };
   });
 }
+
+// Formato de la multa para mostrar en pantalla: "S/ 150.00"
+export function formatearMulta(monto: number, moneda = "S/"): string {
+  return `${moneda} ${monto.toFixed(2)}`;
+}

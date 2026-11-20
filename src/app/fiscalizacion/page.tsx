@@ -1,10 +1,11 @@
 import Image from "next/image";
 import { ImageOff } from "lucide-react";
-import { estadosReporte, tiposReporte, type EstadoReporte, type TipoReporte } from "@/lib/config";
-import { esEstadoReporte, esTipoReporte } from "@/lib/reglas";
+import { estadosReporte, moneda, tiposReporte, type EstadoReporte, type TipoReporte } from "@/lib/config";
+import { esEstadoReporte, esTipoReporte, formatearMulta } from "@/lib/reglas";
 import { exigirRol } from "@/lib/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { AtenderReporte } from "@/components/AtenderReporte";
+import { RegistrarSancion } from "@/components/RegistrarSancion";
 import { Aviso, Chip, Contenedor, Encabezado, EstadoVacio, PildoraFiltro, Tarjeta } from "@/components/ui";
 
 // Arma el enlace de un filtro conservando el otro filtro
@@ -40,6 +41,13 @@ export default async function Bandeja({
   const { data } = await consulta;
   const reportes = data ?? [];
 
+  // Sanciones de los reportes que se muestran (RLS: solo las de este distrito)
+  const ids = reportes.map((r) => r.id);
+  const { data: filasSanciones } = ids.length
+    ? await supabase.from("sanciones").select("id, reporte_id, accion, multa, creado_en").in("reporte_id", ids).order("creado_en")
+    : { data: [] };
+  const sanciones = filasSanciones ?? [];
+
   const titulo = usuario.rol === "fiscalizador" && usuario.distrito ? `Bandeja de ${usuario.distrito}` : "Bandeja de reportes";
 
   return (
@@ -74,6 +82,7 @@ export default async function Bandeja({
 
       <div className="flex flex-col gap-4 pb-12">
         {parametros.aviso === "atendido" && <Aviso tipo="exito">El reporte quedó marcado como atendido.</Aviso>}
+        {parametros.aviso === "sancionado" && <Aviso tipo="exito">La sanción fue registrada.</Aviso>}
         {reportes.length === 0 ? (
           <EstadoVacio titulo="No hay reportes con esos filtros" descripcion="Cambia los filtros o vuelve más tarde." />
         ) : (
@@ -106,7 +115,24 @@ export default async function Bandeja({
                         <span className="font-semibold">Nota:</span> {r.nota}
                       </p>
                     )}
-                    {r.estado === "pendiente" && <AtenderReporte reporteId={r.id} volver={enlace(estado, tipo)} />}
+
+                    {/* Sanciones ya registradas para este reporte */}
+                    {sanciones.filter((s) => s.reporte_id === r.id).length > 0 && (
+                      <ul className="mt-2 flex flex-col gap-1">
+                        {sanciones
+                          .filter((s) => s.reporte_id === r.id)
+                          .map((s) => (
+                            <li key={s.id} className="rounded-control bg-resalte-suave px-3 py-2 text-sm">
+                              <span className="font-semibold">Sanción:</span> {s.accion} · {formatearMulta(Number(s.multa), moneda)}
+                            </li>
+                          ))}
+                      </ul>
+                    )}
+
+                    <div className="flex flex-wrap gap-x-3">
+                      {r.estado === "pendiente" && <AtenderReporte reporteId={r.id} volver={enlace(estado, tipo)} />}
+                      <RegistrarSancion reporteId={r.id} volver={enlace(estado, tipo)} />
+                    </div>
                   </div>
                 </Tarjeta>
               </li>
