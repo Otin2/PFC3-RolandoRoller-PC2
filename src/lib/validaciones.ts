@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { distritos } from "./config";
+import { LIMITES_LIMA_NORTE as L } from "./reglas";
 
 // ============================================================
 // CAPA DE NEGOCIO: esquemas Zod.
@@ -49,5 +50,33 @@ export const esquemaMascota = z.object({
     .min(1, { error: "Ingresa el nombre de la mascota" })
     .max(60, { error: "Máximo 60 caracteres" }),
   especie: z.enum(["perro", "gato", "otro"], { error: "Elige la especie" }),
+  distrito: esquemaDistrito,
+});
+
+// Un campo vacío ("") se trata como "no llenado" para que NO se convierta en 0
+const vacioComoNulo = (v: unknown) => (typeof v === "string" && v.trim() === "" ? undefined : v);
+
+// Reporte de un punto crítico (la foto se valida aparte con validarFoto)
+export const esquemaReporte = z.object({
+  tipo: z.enum(["heces", "orina", "mascota_suelta"], { error: "Elige el tipo de punto crítico" }),
+  descripcion: z
+    .string()
+    .trim()
+    .max(300, { error: "Máximo 300 caracteres" })
+    .optional(),
+  lat: z.preprocess(
+    vacioComoNulo,
+    z.coerce
+      .number({ error: "Indica la ubicación" })
+      .min(L.latMin, { error: "La ubicación debe estar en Lima Norte" })
+      .max(L.latMax, { error: "La ubicación debe estar en Lima Norte" }),
+  ),
+  lng: z.preprocess(
+    vacioComoNulo,
+    z.coerce
+      .number({ error: "Indica la ubicación" })
+      .min(L.lngMin, { error: "La ubicación debe estar en Lima Norte" })
+      .max(L.lngMax, { error: "La ubicación debe estar en Lima Norte" }),
+  ),
   distrito: esquemaDistrito,
 });
