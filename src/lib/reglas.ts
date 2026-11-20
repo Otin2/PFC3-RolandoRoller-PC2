@@ -98,3 +98,20 @@ export function indicadoresPorDistrito(
 export function formatearMulta(monto: number, moneda = "S/"): string {
   return `${moneda} ${monto.toFixed(2)}`;
 }
+
+// ---------- Mapa ----------
+// Posición de un punto dentro del recuadro de Lima Norte, en % (0 a 100).
+// x = izquierda -> derecha (longitud), y = arriba -> abajo (latitud, el norte arriba).
+export function posicionEnMapa(lat: number, lng: number): { x: number; y: number } {
+  const l = LIMITES_LIMA_NORTE;
+  const limitar = (n: number) => Math.min(100, Math.max(0, n));
+  return {
+    x: limitar(((lng - l.lngMin) / (l.lngMax - l.lngMin)) * 100),
+    y: limitar(((l.latMax - lat) / (l.latMax - l.latMin)) * 100),
+  };
+}
+
+// Enlace para ver el punto en OpenStreetMap
+export function urlOpenStreetMap(lat: number, lng: number): string {
+  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`;
+}
