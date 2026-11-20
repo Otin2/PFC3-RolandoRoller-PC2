@@ -68,4 +68,5 @@ Cada `feature/*` entra a `test` por Pull Request con el CI en verde. Al cerrar e
 - **Zod** valida toda entrada en el servidor.
 - El **rol** se lee de la tabla `usuarios`, nunca del navegador. El rol admin no se puede elegir al registrarse.
 - **Cabeceras HTTP**: CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` y HSTS.
-- **HTTPS** automático en Vercel, **`npm audit`** en el pipeline y **Dependabot** semanal (DevSecOps).
+- **HTTPS** automático en Vercel y **Dependabot** semanal.
+- **Pipeline de seguridad** (`.github/workflows/seguridad.yml`): **CodeQL** (análisis estático), **gitleaks** (busca claves o secretos en el código) y **`npm audit`**, con permisos mínimos (`contents: read`, `security-events: write`).
