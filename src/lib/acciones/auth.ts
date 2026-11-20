@@ -29,7 +29,7 @@ export async function iniciarSesion(
   redirect("/panel");
 }
 
-// Registro: el nombre y el rol viajan como metadata; el trigger del SQL
+// Registro: el nombre, el rol y el distrito viajan como metadata; el trigger del SQL
 // crea el perfil en public.usuarios (y nunca permite el rol admin).
 export async function registrarUsuario(
   _estado: EstadoFormulario,
@@ -42,12 +42,12 @@ export async function registrarUsuario(
     return { errores: erroresPorCampo(resultado.error), valores };
   }
 
-  const { email, password, nombre, rol } = resultado.data;
+  const { email, password, nombre, rol, distrito } = resultado.data;
   const supabase = await crearClienteServidor();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { nombre, rol } },
+    options: { data: { nombre, rol, distrito } },
   });
 
   // Supabase no da error si el correo ya existe: devuelve un usuario sin identidades

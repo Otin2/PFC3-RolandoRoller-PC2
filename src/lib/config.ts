@@ -1,62 +1,53 @@
 // ============================================================
-// CONFIGURACIÓN DEL CASO
-// El día del examen se cambian SOLO estos textos para adaptar
-// la aplicación al caso (nombres visibles, actores, entidades).
-// Los nombres de tablas deben coincidir con supabase/schema.sql.
+// CONFIGURACIÓN DEL CASO: PataLimpia
+// Aquí se centralizan los textos, roles y listas fijas del sistema.
+// Los valores deben coincidir con supabase/schema.sql.
 // ============================================================
 
 export const caso = {
-  nombre: "[CASO]",
-  eslogan: "Conectamos [actor 2] con [actor 1]",
-  // Segunda línea entre paréntesis del título gigante (recurso de la guía de diseño)
-  aparte: "(en un solo lugar)",
+  nombre: "PataLimpia",
+  eslogan: "Mascotas y salubridad en Lima Norte",
   descripcion:
-    "Plataforma web para registrar [entidad principal], publicar [entidad hija] y gestionar [transacciones] con datos reales.",
+    "Los vecinos reportan puntos críticos con foto y ubicación, registran sus mascotas y el municipio atiende cada caso.",
 };
 
 // Roles del sistema (deben coincidir con el enum rol_usuario del SQL)
 export const roles = {
-  comprador: { valor: "comprador", etiqueta: "Comprador" },
-  vendedor: { valor: "vendedor", etiqueta: "Vendedor" },
+  vecino: { valor: "vecino", etiqueta: "Vecino" },
+  fiscalizador: { valor: "fiscalizador", etiqueta: "Fiscalizador" },
   admin: { valor: "admin", etiqueta: "Administrador" },
 } as const;
 
 export type Rol = keyof typeof roles;
 
 // Roles que se pueden elegir al registrarse (el admin NO)
-export const rolesRegistro: Rol[] = ["comprador", "vendedor"];
+export const rolesRegistro: Rol[] = ["vecino", "fiscalizador"];
 
-// Entidades: nombre de la tabla + textos visibles
-export const entidades = {
-  principal: {
-    tabla: "tiendas",
-    singular: "Tienda",
-    plural: "Tiendas",
-    ruta: "/tiendas",
-    campoExtra: "Rubro", // columna "rubro" de la tabla
-  },
-  hija: {
-    tabla: "productos",
-    singular: "Producto",
-    plural: "Productos",
-    ruta: "/productos",
-    rutaCatalogo: "/catalogo", // búsqueda pública y detalle de cada entidad principal
-  },
-  transaccion: {
-    tabla: "pedidos",
-    tablaDetalle: "detalle_pedido",
-    singular: "Pedido",
-    plural: "Pedidos",
-    ruta: "/pedidos",
-  },
+// Distritos de Lima Norte que cubre el sistema (igual que distrito_valido() del SQL)
+export const distritos = ["Los Olivos", "Comas", "San Martín de Porres", "Independencia"] as const;
+export type Distrito = (typeof distritos)[number];
+
+// Tipos de punto crítico que se pueden reportar (check de reportes.tipo)
+export const tiposReporte = {
+  heces: { valor: "heces", etiqueta: "Heces" },
+  orina: { valor: "orina", etiqueta: "Orina" },
+  mascota_suelta: { valor: "mascota_suelta", etiqueta: "Mascota suelta" },
 } as const;
+export type TipoReporte = keyof typeof tiposReporte;
 
-// Estados posibles de una transacción (check del SQL)
-export const estadosTransaccion = [
-  "pendiente",
-  "confirmado",
-  "entregado",
-  "cancelado",
-] as const;
+// Estados de un reporte (check de reportes.estado)
+export const estadosReporte = {
+  pendiente: { valor: "pendiente", etiqueta: "Pendiente" },
+  atendido: { valor: "atendido", etiqueta: "Atendido" },
+} as const;
+export type EstadoReporte = keyof typeof estadosReporte;
+
+// Especies de mascota (check de mascotas.especie)
+export const especies = {
+  perro: { valor: "perro", etiqueta: "Perro" },
+  gato: { valor: "gato", etiqueta: "Gato" },
+  otro: { valor: "otro", etiqueta: "Otro" },
+} as const;
+export type Especie = keyof typeof especies;
 
 export const moneda = "S/";

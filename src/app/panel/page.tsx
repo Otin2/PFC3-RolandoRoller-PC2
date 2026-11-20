@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { roles } from "@/lib/config";
+import { roles, tiposReporte, type TipoReporte } from "@/lib/config";
+import { fechaLimiteAviso } from "@/lib/reglas";
+import { crearClienteServidor } from "@/lib/supabase/server";
 import { exigirRol } from "@/lib/sesion";
 import { menuPorRol } from "@/lib/menu";
 import { Aviso, Contenedor, Encabezado, EstadoVacio } from "@/components/ui";
 
-// Panel: el menú cambia según el rol del usuario
+// Panel: las opciones cambian según el rol del usuario
 export default async function Panel({
   searchParams,
 }: {
@@ -14,16 +16,40 @@ export default async function Panel({
   const { error } = await searchParams;
   const menu = menuPorRol(usuario.rol);
 
+  // Aviso al vecino: sus reportes atendidos en los últimos 7 días
+  let atendidos: { id: number; tipo: string; distrito: string; nota: string | null }[] = [];
+  if (usuario.rol === "vecino") {
+    const supabase = await crearClienteServidor();
+    const { data } = await supabase
+      .from("reportes")
+      .select("id, tipo, distrito, nota")
+      .eq("usuario_id", usuario.id)
+      .eq("estado", "atendido")
+      .gte("atendido_en", fechaLimiteAviso().toISOString())
+      .order("atendido_en", { ascending: false });
+    atendidos = data ?? [];
+  }
+
   return (
     <Contenedor>
       <Encabezado
         antetitulo="Panel"
         titulo={`Hola, ${usuario.nombre}`}
-        descripcion={usuario.rol ? `Entraste como ${roles[usuario.rol].etiqueta.toLowerCase()}.` : undefined}
+        descripcion={
+          usuario.rol
+            ? `Entraste como ${roles[usuario.rol].etiqueta.toLowerCase()}${usuario.distrito ? ` · ${usuario.distrito}` : ""}.`
+            : undefined
+        }
       />
 
-      <div className="flex flex-col gap-6 py-10">
+      <div className="flex flex-col gap-6 pb-12">
         {error === "sin-permiso" && <Aviso>No tienes permiso para entrar a esa sección.</Aviso>}
+
+        {atendidos.map((r) => (
+          <Aviso key={r.id} tipo="exito">
+            Tu reporte de {tiposReporte[r.tipo as TipoReporte]?.etiqueta.toLowerCase() ?? r.tipo} en {r.distrito} fue atendido: {r.nota}
+          </Aviso>
+        ))}
 
         {menu.length === 0 ? (
           <EstadoVacio
@@ -31,16 +57,15 @@ export default async function Panel({
             descripcion="Pide al administrador que revise tu cuenta."
           />
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {menu.map((op) => (
               <li key={op.ruta}>
                 <Link
                   href={op.ruta}
-                  className="revelar group block h-full border bg-superficie transition-all duration-300 rounded-[38px] border-black p-8 hover:-rotate-1 hover:scale-[1.02] hover:border-acento"
+                  className="block h-full rounded-tarjeta border border-borde-suave bg-superficie p-5 transition-colors hover:border-acento"
                 >
-                  <p className="font-display text-4xl font-normal uppercase leading-[0.9] tracking-[0.02em] text-acento">{op.etiqueta}</p>
-                  <p className="text-sm text-texto-2 mt-4">{op.descripcion}</p>
-                  <p className="etiqueta mt-6 text-sm font-medium group-hover:underline text-white no-underline">Abrir ›</p>
+                  <p className="text-lg font-bold text-acento">{op.etiqueta}</p>
+                  <p className="mt-2 text-sm text-texto-2">{op.descripcion}</p>
                 </Link>
               </li>
             ))}

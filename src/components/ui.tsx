@@ -2,56 +2,33 @@ import Link from "next/link";
 
 // ============================================================
 // Componentes de interfaz reutilizables (sin lógica de negocio).
-// Estilo según la guía de diseño (DESIGN.md): botones de 15px de radio,
-// letra condensada en mayúsculas, superficies planas sin sombras.
+// Estilo PataLimpia: botones redondeados, tarjetas blancas con borde
+// suave y casi sin sombras. Mobile-first.
 // ============================================================
 
 type VarianteBoton = "principal" | "secundario" | "texto";
 
 const estilosBoton: Record<VarianteBoton, string> = {
-  // Primary CTA: relleno rojo, texto blanco
   principal: "bg-acento text-sobre-acento hover:bg-acento-hover",
-  // Ghost CTA: transparente con borde blanco de 1px
-  secundario: "border border-white text-white hover:bg-white hover:text-fondo",
-  texto: "text-resalte hover:text-white",
+  secundario: "border border-borde bg-superficie text-texto hover:bg-seccion",
+  texto: "text-acento hover:bg-seccion",
 };
 
 const baseBoton =
-  "group inline-flex items-center justify-center gap-1.5 rounded-control px-3.5 py-2 font-display text-[16px] uppercase tracking-[0.03em] transition-all duration-300 disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50";
 
-function Flecha() {
-  return (
-    <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
-      ›
-    </span>
-  );
-}
-
-// chevrones = estilo "› TEXTO ‹" de los botones grandes
 export function BotonEnlace({
   href,
   children,
   variante = "principal",
-  chevrones = false,
 }: {
   href: string;
   children: React.ReactNode;
   variante?: VarianteBoton;
-  chevrones?: boolean;
 }) {
-  if (chevrones) {
-    return (
-      <Link href={href} className={`${baseBoton} ${estilosBoton[variante]} px-4 py-2.5`}>
-        <span aria-hidden className="text-xs transition-transform duration-300 group-hover:translate-x-1">›</span>
-        {children}
-        <span aria-hidden className="text-xs transition-transform duration-300 group-hover:-translate-x-1">‹</span>
-      </Link>
-    );
-  }
   return (
     <Link href={href} className={`${baseBoton} ${estilosBoton[variante]}`}>
       {children}
-      {variante !== "texto" && <Flecha />}
     </Link>
   );
 }
@@ -64,22 +41,21 @@ export function Boton({
   return (
     <button {...props} className={`${baseBoton} ${estilosBoton[variante]}`}>
       {children}
-      {variante !== "texto" && <Flecha />}
     </button>
   );
 }
 
-// Contenedor centrado con ancho máximo de 1280px
+// Contenedor centrado con ancho máximo
 export function Contenedor({ children }: { children: React.ReactNode }) {
-  return <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">{children}</div>;
+  return <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">{children}</div>;
 }
 
-// Antetítulo pequeño en mayúsculas, rojo y entre ◂ ▸
+// Antetítulo pequeño en mayúsculas
 export function Antetitulo({ children }: { children: React.ReactNode }) {
-  return <p className="antetitulo etiqueta text-sm font-medium text-acento">{children}</p>;
+  return <p className="antetitulo text-xs text-acento">{children}</p>;
 }
 
-// Encabezado de cada página interna: centrado, antetítulo ◂ ▸ y título gigante
+// Encabezado de cada página interna: antetítulo, título y descripción
 export function Encabezado({
   titulo,
   antetitulo,
@@ -92,25 +68,25 @@ export function Encabezado({
   accion?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-8 pb-8 pt-20 text-center">
+    <div className="flex flex-col gap-4 pb-6 pt-10 sm:flex-row sm:items-end sm:justify-between">
       <div>
         {antetitulo && (
-          <div className="mb-5">
+          <div className="mb-2">
             <Antetitulo>{antetitulo}</Antetitulo>
           </div>
         )}
         <h1 className="titulo-pagina">{titulo}</h1>
-        {descripcion && <p className="mx-auto mt-6 max-w-xl text-texto-2">{descripcion}</p>}
+        {descripcion && <p className="mt-2 max-w-xl text-texto-2">{descripcion}</p>}
       </div>
-      {accion && <div className="flex flex-wrap justify-center gap-3">{accion}</div>}
+      {accion && <div className="flex flex-wrap gap-3">{accion}</div>}
     </div>
   );
 }
 
-// Tarjeta de contenido. destacada = radio grande de 38px (feature card)
-export function Tarjeta({ children, destacada = false }: { children: React.ReactNode; destacada?: boolean }) {
+// Tarjeta de contenido
+export function Tarjeta({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`border border-black bg-superficie ${destacada ? "rounded-[38px] p-8" : "rounded-tarjeta p-6"}`}>
+    <div className={`rounded-tarjeta border border-borde-suave bg-superficie p-5 sm:p-6 ${className}`}>
       {children}
     </div>
   );
@@ -127,40 +103,55 @@ export function EstadoVacio({
   accion?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[38px] border border-black bg-seccion px-6 py-16 text-center">
-      <p className="font-display text-4xl uppercase tracking-[0.03em] text-acento">{titulo}</p>
-      {descripcion && <p className="mx-auto mt-4 max-w-md text-base text-texto-2">{descripcion}</p>}
-      {accion && <div className="mt-6 flex justify-center">{accion}</div>}
+    <div className="rounded-tarjeta border border-dashed border-borde bg-seccion px-6 py-12 text-center">
+      <p className="text-lg font-bold text-texto">{titulo}</p>
+      {descripcion && <p className="mx-auto mt-2 max-w-md text-sm text-texto-2">{descripcion}</p>}
+      {accion && <div className="mt-5 flex justify-center">{accion}</div>}
     </div>
   );
 }
 
-// Mensaje de error o de éxito (sin colores nuevos: rosa sobre vino, borde rojo si es error)
+// Mensaje de error, éxito o información
 export function Aviso({
   tipo = "error",
   children,
 }: {
-  tipo?: "error" | "exito";
+  tipo?: "error" | "exito" | "info";
   children: React.ReactNode;
 }) {
-  const color = tipo === "error" ? "border-acento bg-acento/15" : "border-resalte bg-superficie";
+  const colores = {
+    error: "border-error/40 bg-red-50 text-error",
+    exito: "border-acento/30 bg-acento-suave text-acento-hover",
+    info: "border-resalte/50 bg-resalte-suave text-texto",
+  };
   return (
-    <div role="alert" className={`rounded-control border px-4 py-3 text-sm text-resalte ${color}`}>
+    <div role="alert" className={`rounded-control border px-4 py-3 text-sm ${colores[tipo]}`}>
       {children}
     </div>
   );
 }
 
-// Etiqueta pequeña (estado, rol): píldora rosa en mayúsculas
-export function Chip({ children }: { children: React.ReactNode }) {
+// Etiqueta pequeña (estado, rol). tono: neutro | pendiente (ámbar) | atendido (verde)
+export function Chip({
+  children,
+  tono = "neutro",
+}: {
+  children: React.ReactNode;
+  tono?: "neutro" | "pendiente" | "atendido";
+}) {
+  const colores = {
+    neutro: "bg-seccion text-texto-2",
+    pendiente: "bg-resalte-suave text-amber-800",
+    atendido: "bg-acento-suave text-acento-hover",
+  };
   return (
-    <span className="inline-flex items-center rounded-control bg-resalte px-3 py-1 text-xs font-medium uppercase tracking-[0.02em] text-fondo">
+    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${colores[tono]}`}>
       {children}
     </span>
   );
 }
 
-// Píldora de filtro (DESIGN.md: filter pill toggle). activa = fondo rojo
+// Píldora de filtro (se activa con un enlace con query params)
 export function PildoraFiltro({
   href,
   activa,
@@ -174,8 +165,10 @@ export function PildoraFiltro({
     <Link
       href={href}
       aria-current={activa ? "page" : undefined}
-      className={`inline-flex items-center gap-1.5 rounded-control border px-4 py-2 font-display text-base uppercase tracking-[0.03em] transition-colors ${
-        activa ? "border-acento bg-acento text-sobre-acento" : "border-transparent text-texto-2 hover:border-resalte hover:text-white"
+      className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+        activa
+          ? "border-acento bg-acento text-sobre-acento"
+          : "border-borde bg-superficie text-texto-2 hover:border-acento hover:text-acento"
       }`}
     >
       {children}
@@ -192,18 +185,18 @@ export function Tabla({
   children: React.ReactNode;
 }) {
   return (
-    <div className="revelar overflow-x-auto rounded-tarjeta border border-black">
+    <div className="overflow-x-auto rounded-tarjeta border border-borde-suave bg-superficie">
       <table className="w-full min-w-[560px] text-left text-sm">
-        <thead className="bg-black text-texto-2">
+        <thead className="bg-seccion text-texto-2">
           <tr>
             {columnas.map((c, i) => (
-              <th key={`${c}-${i}`} className="etiqueta px-4 py-3 font-medium">
+              <th key={`${c}-${i}`} className="etiqueta px-4 py-3">
                 {c}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-black bg-seccion">{children}</tbody>
+        <tbody className="divide-y divide-borde-suave">{children}</tbody>
       </table>
     </div>
   );

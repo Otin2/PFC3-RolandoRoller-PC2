@@ -7,6 +7,7 @@ export type UsuarioActual = {
   id: string;
   email: string;
   nombre: string;
+  distrito: string | null; // distrito del perfil (el fiscalizador atiende solo ese)
   rol: Rol | null; // null si todavía no tiene perfil en public.usuarios
 };
 
@@ -23,7 +24,7 @@ export const obtenerUsuarioActual = cache(async (): Promise<UsuarioActual | null
 
   const { data: perfil } = await supabase
     .from("usuarios")
-    .select("nombre, rol")
+    .select("nombre, rol, distrito")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -31,6 +32,7 @@ export const obtenerUsuarioActual = cache(async (): Promise<UsuarioActual | null
     id: user.id,
     email: user.email ?? "",
     nombre: perfil?.nombre ?? user.email ?? "Usuario",
+    distrito: perfil?.distrito ?? null,
     rol: (perfil?.rol as Rol | undefined) ?? null,
   };
 });

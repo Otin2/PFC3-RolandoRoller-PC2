@@ -1,76 +1,105 @@
 import { describe, expect, it } from "vitest";
-import { esquemaCambioRol, esquemaHija, esquemaRegistro, esquemaTransaccion } from "@/lib/validaciones";
+import {
+  esquemaAtencion,
+  esquemaMascota,
+  esquemaRegistro,
+  esquemaReporte,
+  esquemaSancion,
+} from "@/lib/validaciones";
 
 describe("esquemaRegistro", () => {
-  const valido = { nombre: "Demo", email: "demo@demo.com", password: "123456", rol: "comprador" };
+  const valido = { nombre: "Ana", email: "ana@demo.com", password: "123456", rol: "vecino", distrito: "Comas" };
 
   it("acepta un registro válido", () => {
     expect(esquemaRegistro.safeParse(valido).success).toBe(true);
   });
 
-  it("rechaza un correo inválido", () => {
-    expect(esquemaRegistro.safeParse({ ...valido, email: "no-es-correo" }).success).toBe(false);
-  });
-
-  it("rechaza una contraseña de menos de 6 caracteres", () => {
-    expect(esquemaRegistro.safeParse({ ...valido, password: "1234" }).success).toBe(false);
+  it("acepta el rol fiscalizador", () => {
+    expect(esquemaRegistro.safeParse({ ...valido, rol: "fiscalizador" }).success).toBe(true);
   });
 
   it("no permite registrarse como admin", () => {
     expect(esquemaRegistro.safeParse({ ...valido, rol: "admin" }).success).toBe(false);
   });
+
+  it("exige un distrito de Lima Norte", () => {
+    expect(esquemaRegistro.safeParse({ ...valido, distrito: "Miraflores" }).success).toBe(false);
+    expect(esquemaRegistro.safeParse({ ...valido, distrito: "" }).success).toBe(false);
+  });
+
+  it("rechaza correo inválido y contraseña corta", () => {
+    expect(esquemaRegistro.safeParse({ ...valido, email: "no-es-correo" }).success).toBe(false);
+    expect(esquemaRegistro.safeParse({ ...valido, password: "1234" }).success).toBe(false);
+  });
 });
 
-describe("esquemaHija", () => {
-  const valido = { tienda_id: "1", nombre: "Polo", precio: "25.00", stock: "10" };
+describe("esquemaMascota", () => {
+  const valida = { nombre: "Firulais", especie: "perro", distrito: "Los Olivos" };
 
-  it("acepta precio y stock válidos (convierte texto a número)", () => {
-    const r = esquemaHija.safeParse(valido);
+  it("acepta una mascota válida", () => {
+    expect(esquemaMascota.safeParse(valida).success).toBe(true);
+  });
+
+  it("rechaza nombre vacío y especie desconocida", () => {
+    expect(esquemaMascota.safeParse({ ...valida, nombre: "  " }).success).toBe(false);
+    expect(esquemaMascota.safeParse({ ...valida, especie: "dragon" }).success).toBe(false);
+  });
+});
+
+describe("esquemaReporte", () => {
+  const valido = { tipo: "heces", lat: "-11.962", lng: "-77.071", distrito: "Los Olivos", descripcion: "" };
+
+  it("acepta un reporte válido y convierte lat/lng a número", () => {
+    const r = esquemaReporte.safeParse(valido);
     expect(r.success).toBe(true);
-    expect(r.data?.precio).toBe(25);
+    expect(r.data?.lat).toBe(-11.962);
   });
 
-  it("rechaza un precio negativo", () => {
-    expect(esquemaHija.safeParse({ ...valido, precio: "-1" }).success).toBe(false);
+  it("rechaza un tipo desconocido", () => {
+    expect(esquemaReporte.safeParse({ ...valido, tipo: "basura" }).success).toBe(false);
   });
 
-  it("rechaza un stock negativo", () => {
-    expect(esquemaHija.safeParse({ ...valido, stock: "-5" }).success).toBe(false);
-  });
-});
-
-describe("esquemaTransaccion", () => {
-  it("exige al menos un ítem", () => {
-    expect(esquemaTransaccion.safeParse({ items: [] }).success).toBe(false);
+  it("rechaza coordenadas fuera de Lima Norte o vacías", () => {
+    expect(esquemaReporte.safeParse({ ...valido, lat: "-12.5" }).success).toBe(false);
+    expect(esquemaReporte.safeParse({ ...valido, lng: "" }).success).toBe(false);
   });
 
-  it("rechaza cantidad 0", () => {
-    expect(esquemaTransaccion.safeParse({ items: [{ producto_id: 1, cantidad: 0 }] }).success).toBe(false);
+  it("rechaza una descripción de más de 300 caracteres", () => {
+    expect(esquemaReporte.safeParse({ ...valido, descripcion: "a".repeat(301) }).success).toBe(false);
   });
 });
 
-describe("esquemaHija con campos vacíos", () => {
-  it("rechaza un precio vacío en vez de guardarlo como 0", () => {
-    expect(esquemaHija.safeParse({ tienda_id: "1", nombre: "Polo", precio: "", stock: "10" }).success).toBe(false);
+describe("esquemaAtencion", () => {
+  it("acepta una nota y convierte el id", () => {
+    const r = esquemaAtencion.safeParse({ reporte_id: "5", nota: "Se limpió la zona" });
+    expect(r.success).toBe(true);
+    expect(r.data?.reporte_id).toBe(5);
   });
 
-  it("rechaza un stock vacío en vez de guardarlo como 0", () => {
-    expect(esquemaHija.safeParse({ tienda_id: "1", nombre: "Polo", precio: "25", stock: "" }).success).toBe(false);
+  it("exige una nota de al menos 3 caracteres", () => {
+    expect(esquemaAtencion.safeParse({ reporte_id: "5", nota: "ok" }).success).toBe(false);
   });
 });
 
-describe("esquemaCambioRol", () => {
-  const id = "3f1c2a9e-6b1d-4c2e-9a7f-1b2c3d4e5f60";
+describe("esquemaSancion", () => {
+  const valida = { reporte_id: "3", accion: "Amonestación al dueño", multa: "150.50" };
 
-  it("acepta un rol válido", () => {
-    expect(esquemaCambioRol.safeParse({ usuario_id: id, rol: "vendedor" }).success).toBe(true);
+  it("acepta una sanción válida", () => {
+    const r = esquemaSancion.safeParse(valida);
+    expect(r.success).toBe(true);
+    expect(r.data?.multa).toBe(150.5);
   });
 
-  it("rechaza un rol inventado", () => {
-    expect(esquemaCambioRol.safeParse({ usuario_id: id, rol: "superadmin" }).success).toBe(false);
+  it("acepta multa 0", () => {
+    expect(esquemaSancion.safeParse({ ...valida, multa: "0" }).success).toBe(true);
   });
 
-  it("rechaza un id de usuario que no es UUID", () => {
-    expect(esquemaCambioRol.safeParse({ usuario_id: "123", rol: "vendedor" }).success).toBe(false);
+  it("rechaza multa negativa o vacía (no se vuelve 0 sola)", () => {
+    expect(esquemaSancion.safeParse({ ...valida, multa: "-5" }).success).toBe(false);
+    expect(esquemaSancion.safeParse({ ...valida, multa: "" }).success).toBe(false);
+  });
+
+  it("rechaza una acción muy corta", () => {
+    expect(esquemaSancion.safeParse({ ...valida, accion: "ab" }).success).toBe(false);
   });
 });

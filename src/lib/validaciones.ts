@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { distritos } from "./config";
+import { LIMITES_LIMA_NORTE as L, MULTA_MAXIMA } from "./reglas";
 
 // ============================================================
 // CAPA DE NEGOCIO: esquemas Zod.
@@ -22,71 +24,9 @@ export const esquemaRegistro = esquemaLogin.extend({
     .min(2, { error: "Ingresa tu nombre" })
     .max(80, { error: "Máximo 80 caracteres" }),
   // El admin NO se puede elegir al registrarse
-  rol: z.enum(["comprador", "vendedor"], { error: "Elige un rol válido" }),
-});
-
-// Entidad principal (ej. tienda)
-export const esquemaPrincipal = z.object({
-  nombre: z
-    .string()
-    .trim()
-    .min(2, { error: "Mínimo 2 caracteres" })
-    .max(100, { error: "Máximo 100 caracteres" }),
-  rubro: z.string().trim().max(60, { error: "Máximo 60 caracteres" }).optional(),
-});
-
-// Un campo vacío ("") se trata como "no llenado" para que NO se convierta en 0
-const vacioComoNulo = (v: unknown) => (typeof v === "string" && v.trim() === "" ? undefined : v);
-
-// Entidad hija (ej. producto): precio y stock obligatorios y no negativos
-export const esquemaHija = z.object({
-  tienda_id: z.coerce
-    .number({ error: "Elige una opción" })
-    .int()
-    .positive({ error: "Elige una opción" }),
-  nombre: z
-    .string()
-    .trim()
-    .min(2, { error: "Mínimo 2 caracteres" })
-    .max(100, { error: "Máximo 100 caracteres" }),
-  precio: z.preprocess(
-    vacioComoNulo,
-    z.coerce
-      .number({ error: "Ingresa el precio" })
-      .min(0, { error: "El precio no puede ser negativo" })
-      .max(999999, { error: "Precio demasiado alto" }),
-  ),
-  stock: z.preprocess(
-    vacioComoNulo,
-    z.coerce
-      .number({ error: "Ingresa el stock" })
-      .int({ error: "El stock debe ser entero" })
-      .min(0, { error: "El stock no puede ser negativo" })
-      .max(1000000, { error: "Stock demasiado alto" }),
-  ),
-});
-
-// Un ítem de la transacción (ej. producto + cantidad)
-export const esquemaItem = z.object({
-  producto_id: z.coerce.number().int().positive(),
-  cantidad: z.coerce
-    .number()
-    .int({ error: "La cantidad debe ser entera" })
-    .positive({ error: "La cantidad debe ser mayor a 0" }),
-});
-
-// La transacción completa: al menos un ítem
-export const esquemaTransaccion = z.object({
-  items: z.array(esquemaItem).min(1, { error: "Elige al menos un producto" }),
-});
-
-// Nuevo estado de una transacción (atender pedido)
-export const esquemaEstado = z.enum(["confirmado", "entregado"], { error: "Estado no válido" });
-
-// Cambio de rol desde el panel admin
-export const esquemaCambioRol = z.object({
-  usuario_id: z.uuid({ error: "Usuario no válido" }),
-  rol: z.enum(["comprador", "vendedor", "admin"], { error: "Elige un rol válido" }),
+  rol: z.enum(["vecino", "fiscalizador"], { error: "Elige un rol válido" }),
+  // Distrito de Lima Norte: el fiscalizador atiende SOLO su distrito
+  distrito: z.enum(distritos, { error: "Elige tu distrito" }),
 });
 
 // Convierte los errores de Zod en { campo: "mensaje" } para el formulario
@@ -98,3 +38,72 @@ export function erroresPorCampo(error: z.ZodError): Record<string, string> {
   }
   return resultado;
 }
+
+// Distrito: debe ser uno de los 4 de Lima Norte (registro, mascotas y reportes)
+export const esquemaDistrito = z.enum(distritos, { error: "Elige un distrito" });
+
+// Mascota del vecino (tabla mascotas)
+export const esquemaMascota = z.object({
+  nombre: z
+    .string()
+    .trim()
+    .min(1, { error: "Ingresa el nombre de la mascota" })
+    .max(60, { error: "Máximo 60 caracteres" }),
+  especie: z.enum(["perro", "gato", "otro"], { error: "Elige la especie" }),
+  distrito: esquemaDistrito,
+});
+
+// Un campo vacío ("") se trata como "no llenado" para que NO se convierta en 0
+const vacioComoNulo = (v: unknown) => (typeof v === "string" && v.trim() === "" ? undefined : v);
+
+// Reporte de un punto crítico (la foto se valida aparte con validarFoto)
+export const esquemaReporte = z.object({
+  tipo: z.enum(["heces", "orina", "mascota_suelta"], { error: "Elige el tipo de punto crítico" }),
+  descripcion: z
+    .string()
+    .trim()
+    .max(300, { error: "Máximo 300 caracteres" })
+    .optional(),
+  lat: z.preprocess(
+    vacioComoNulo,
+    z.coerce
+      .number({ error: "Indica la ubicación" })
+      .min(L.latMin, { error: "La ubicación debe estar en Lima Norte" })
+      .max(L.latMax, { error: "La ubicación debe estar en Lima Norte" }),
+  ),
+  lng: z.preprocess(
+    vacioComoNulo,
+    z.coerce
+      .number({ error: "Indica la ubicación" })
+      .min(L.lngMin, { error: "La ubicación debe estar en Lima Norte" })
+      .max(L.lngMax, { error: "La ubicación debe estar en Lima Norte" }),
+  ),
+  distrito: esquemaDistrito,
+});
+
+// Atender un reporte: la nota es obligatoria (la BD también lo exige)
+export const esquemaAtencion = z.object({
+  reporte_id: z.coerce.number().int().positive({ error: "Reporte no válido" }),
+  nota: z
+    .string()
+    .trim()
+    .min(3, { error: "Escribe una nota de atención (mínimo 3 caracteres)" })
+    .max(300, { error: "Máximo 300 caracteres" }),
+});
+
+// Sanción sobre un reporte: acción en texto y multa en soles (0 o más)
+export const esquemaSancion = z.object({
+  reporte_id: z.coerce.number().int().positive({ error: "Reporte no válido" }),
+  accion: z
+    .string()
+    .trim()
+    .min(3, { error: "Describe la acción (mínimo 3 caracteres)" })
+    .max(200, { error: "Máximo 200 caracteres" }),
+  multa: z.preprocess(
+    vacioComoNulo,
+    z.coerce
+      .number({ error: "Ingresa la multa (puede ser 0)" })
+      .min(0, { error: "La multa no puede ser negativa" })
+      .max(MULTA_MAXIMA, { error: "Multa demasiado alta" }),
+  ),
+});

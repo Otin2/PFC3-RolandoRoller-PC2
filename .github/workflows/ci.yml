@@ -2,9 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main, develop, "feature/**"]
+    branches: [main, test, "feature/**"]
   pull_request:
-    branches: [main, develop]
+    branches: [main, test]
+
+# Permisos mínimos
+permissions:
+  contents: read
 
 jobs:
   build-test:

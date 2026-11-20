@@ -1,114 +1,91 @@
-import { entidades, moneda, roles, type Rol } from "@/lib/config";
+import { BarChart3 } from "lucide-react";
+import { roles, type Rol } from "@/lib/config";
 import { exigirRol } from "@/lib/sesion";
+import { indicadoresPorDistrito } from "@/lib/reglas";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { formatearMonto, sumarMontos } from "@/lib/reglas";
-import { cambiarRol } from "@/lib/acciones/usuarios";
-import { Aviso, Celda, Chip, Contenedor, Encabezado, EstadoVacio, Tabla } from "@/components/ui";
+import { Celda, Chip, Contenedor, Encabezado, EstadoVacio, Tabla, Tarjeta } from "@/components/ui";
 
-// Panel de administración: indicadores + listado de usuarios.
-// Solo el admin entra (middleware + exigirRol + RLS).
-// Mensajes de la acción "cambiar rol"
-const avisos: Record<string, { tipo: "exito" | "error"; texto: string }> = {
-  "rol-actualizado": { tipo: "exito", texto: "Rol actualizado." },
-  "propio-rol": { tipo: "error", texto: "No puedes cambiar tu propio rol (el sistema se quedaría sin admin)." },
-  "rol-invalido": { tipo: "error", texto: "Elige un rol válido." },
-  "no-permitido": { tipo: "error", texto: "No se pudo cambiar el rol." },
-};
-
-export default async function Admin({ searchParams }: { searchParams: Promise<{ aviso?: string }> }) {
-  const admin = await exigirRol(["admin"]);
-  const aviso = avisos[(await searchParams).aviso ?? ""];
-  const { principal, hija, transaccion } = entidades;
+// Panel del administrador: indicadores por distrito calculados con la regla pura
+// indicadoresPorDistrito. Solo el admin entra (middleware + exigirRol + RLS).
+export default async function Admin() {
+  await exigirRol(["admin"]);
   const supabase = await crearClienteServidor();
 
-  const contar = async (tabla: string) => {
-    const { count } = await supabase.from(tabla).select("id", { count: "exact", head: true });
-    return count ?? 0;
-  };
-
-  const [{ data: usuarios }, totalPrincipal, totalHija, { data: transacciones }] = await Promise.all([
-    supabase.from("usuarios").select("id, nombre, email, rol, creado_en").order("creado_en", { ascending: false }),
-    contar(principal.tabla),
-    contar(hija.tabla),
-    supabase.from(transaccion.tabla).select("total, estado"),
+  const [{ data: reportes }, { data: mascotas }, { data: usuarios }] = await Promise.all([
+    supabase.from("reportes").select("distrito, estado"),
+    supabase.from("mascotas").select("distrito"),
+    supabase.from("usuarios").select("id, nombre, email, rol, distrito, creado_en").order("creado_en", { ascending: false }),
   ]);
 
+  const distritos = indicadoresPorDistrito(reportes ?? [], mascotas ?? []);
+  const maximo = Math.max(1, ...distritos.map((d) => d.reportes)); // para escalar las barras
   const listaUsuarios = usuarios ?? [];
-  const porRol = (rol: Rol) => listaUsuarios.filter((u) => u.rol === rol).length;
-  // El monto total no cuenta las transacciones canceladas
-  const validas = (transacciones ?? []).filter((t) => t.estado !== "cancelado");
-
-  const indicadores = [
-    { etiqueta: "Usuarios", valor: String(listaUsuarios.length), detalle: `${porRol("comprador")} compradores · ${porRol("vendedor")} vendedores · ${porRol("admin")} admin` },
-    { etiqueta: principal.plural, valor: String(totalPrincipal) },
-    { etiqueta: hija.plural, valor: String(totalHija) },
-    { etiqueta: transaccion.plural, valor: String(transacciones?.length ?? 0) },
-    { etiqueta: "Monto total", valor: formatearMonto(sumarMontos(validas), moneda), detalle: "Sin contar cancelados" },
-  ];
 
   return (
     <Contenedor>
-      <Encabezado antetitulo="Administración" titulo="Indicadores" descripcion="Indicadores calculados en vivo desde la base de datos." />
+      <Encabezado
+        antetitulo="Administración"
+        titulo="Indicadores por distrito"
+        descripcion="Cifras calculadas en vivo desde la base de datos."
+      />
 
-      <section className="grid gap-4 py-10 sm:grid-cols-2 lg:grid-cols-5">
-        {indicadores.map((ind, i) => (
-          <div
-            key={ind.etiqueta}
-            className="revelar rounded-tarjeta bg-seccion p-6 border border-black"
-            style={{ transitionDelay: `${i * 80}ms` }}
-          >
-            <p className="etiqueta text-sm text-texto-2">{ind.etiqueta}</p>
-            <p className="tabular-nums mt-4 font-display text-5xl font-normal tracking-[0.02em] text-acento">
-              {ind.valor}
-            </p>
-            {ind.detalle && <p className="mt-2 text-xs text-texto-3">{ind.detalle}</p>}
-          </div>
+      {/* Tarjetas por distrito */}
+      <section aria-label="Resumen por distrito" className="grid gap-4 pb-8 sm:grid-cols-2 lg:grid-cols-4">
+        {distritos.map((d) => (
+          <Tarjeta key={d.distrito}>
+            <h2 className="font-bold text-acento">{d.distrito}</h2>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div className="flex justify-between"><dt className="text-texto-2">Reportes</dt><dd className="tabular-nums font-bold">{d.reportes}</dd></div>
+              <div className="flex justify-between"><dt className="text-texto-2">Atendidos</dt><dd className="tabular-nums font-bold">{d.porcentaje}%</dd></div>
+              <div className="flex justify-between"><dt className="text-texto-2">Mascotas</dt><dd className="tabular-nums font-bold">{d.mascotas}</dd></div>
+            </dl>
+          </Tarjeta>
         ))}
       </section>
 
-      <section className="pb-10">
-        <h2 className="font-display text-4xl font-normal uppercase tracking-[0.03em] text-acento">
-          Usuarios registrados
-        </h2>
-        <div className="mt-4 flex flex-col gap-4">
-          {aviso && <Aviso tipo={aviso.tipo}>{aviso.texto}</Aviso>}
+      {/* Gráfico de barras simple con divs: reportes atendidos y pendientes por distrito */}
+      <section aria-label="Gráfico de reportes por distrito" className="pb-10">
+        <h2 className="titulo-seccion flex items-center gap-2"><BarChart3 size={22} aria-hidden /> Reportes por distrito</h2>
+        <Tarjeta className="mt-4">
+          <ul className="flex flex-col gap-4">
+            {distritos.map((d) => (
+              <li key={d.distrito}>
+                <div className="mb-1 flex justify-between text-sm">
+                  <span className="font-semibold">{d.distrito}</span>
+                  <span className="tabular-nums text-texto-2">{d.atendidos} atendidos de {d.reportes}</span>
+                </div>
+                {/* El largo de la barra es proporcional al distrito con más reportes */}
+                <div className="h-5 w-full overflow-hidden rounded-full bg-seccion">
+                  <div className="flex h-full" style={{ width: `${(d.reportes / maximo) * 100}%` }}>
+                    <div className="h-full bg-acento" style={{ flexGrow: d.atendidos }} />
+                    <div className="h-full bg-resalte" style={{ flexGrow: d.reportes - d.atendidos }} />
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <ul className="mt-5 flex flex-wrap gap-4 text-sm text-texto-2">
+            <li className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-acento" aria-hidden /> Atendidos</li>
+            <li className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-resalte" aria-hidden /> Pendientes</li>
+          </ul>
+        </Tarjeta>
+      </section>
+
+      {/* Lista de usuarios (opcional) */}
+      <section className="pb-12">
+        <h2 className="titulo-seccion">Usuarios registrados</h2>
+        <div className="mt-4">
           {listaUsuarios.length === 0 ? (
             <EstadoVacio titulo="No hay usuarios" />
           ) : (
-            <Tabla columnas={["Nombre", "Correo", "Rol", "Registro", "Cambiar rol"]}>
+            <Tabla columnas={["Nombre", "Correo", "Rol", "Distrito", "Registro"]}>
               {listaUsuarios.map((u) => (
                 <tr key={u.id}>
                   <Celda className="font-medium">{u.nombre}</Celda>
                   <Celda className="text-texto-2">{u.email}</Celda>
                   <Celda><Chip>{roles[u.rol as Rol]?.etiqueta ?? u.rol}</Chip></Celda>
+                  <Celda className="text-texto-2">{u.distrito}</Celda>
                   <Celda className="text-texto-2">{new Date(u.creado_en).toLocaleDateString("es-PE")}</Celda>
-                  <Celda>
-                    {u.id === admin.id ? (
-                      <span className="text-xs text-texto-2">(tú)</span>
-                    ) : (
-                      // Gestionar roles: formulario pequeño por fila (Zod + función SQL cambiar_rol)
-                      <form action={cambiarRol} className="flex items-center gap-2">
-                        <input type="hidden" name="usuario_id" value={u.id} />
-                        <label className="sr-only" htmlFor={`rol-${u.id}`}>Rol de {u.nombre}</label>
-                        <select
-                          id={`rol-${u.id}`}
-                          name="rol"
-                          defaultValue={u.rol}
-                          className="campo rounded-control border px-2 py-1.5 text-sm"
-                        >
-                          {(Object.keys(roles) as Rol[]).map((r) => (
-                            <option key={r} value={r}>{roles[r].etiqueta}</option>
-                          ))}
-                        </select>
-                        <button
-                          type="submit"
-                          className="rounded-control bg-acento px-3 py-1.5 font-display text-sm uppercase tracking-[0.03em] text-white hover:bg-acento-hover"
-                        >
-                          Guardar
-                        </button>
-                      </form>
-                    )}
-                  </Celda>
                 </tr>
               ))}
             </Tabla>

@@ -1,0 +1,57 @@
+name: Seguridad
+
+# Análisis estático (CodeQL), búsqueda de secretos (gitleaks) y auditoría de dependencias
+on:
+  push:
+    branches: [main, test, "feature/**"]
+  pull_request:
+    branches: [main, test]
+  schedule:
+    - cron: "0 8 * * 1" # cada lunes
+
+# Permisos mínimos: solo leer el código y publicar alertas de seguridad
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  codeql:
+    name: CodeQL (JavaScript/TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+
+  secretos:
+    name: Escaneo de secretos (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # historial completo para revisar todos los commits
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependencias:
+    name: Auditoría de dependencias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm audit --audit-level=high
