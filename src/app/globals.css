@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+/* ============================================================
+   SISTEMA VISUAL (guía DESIGN.md, estilo póster)
+   Fondo vino, títulos gigantes en mayúsculas condensadas,
+   un solo rojo para las acciones, rosa para el texto secundario
+   y superficies planas sin sombras.
+   ============================================================ */
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-anton), "Arial Narrow", Impact, sans-serif;
+
+  /* Paleta (solo 6 colores de la guía) */
+  --color-fondo: #4f0423;        /* Burgundy Stage: lienzo de la página */
+  --color-seccion: #260212;      /* Velvet Wine: bloques oscuros */
+  --color-superficie: #260212;   /* tarjetas */
+  --color-texto: #ffffff;        /* Bone White: texto principal */
+  --color-texto-2: #ffc7c6;      /* Blush: texto secundario */
+  --color-texto-3: #ffc7c6;
+  --color-tenue: #c98d93;        /* placeholders */
+  --color-borde: rgb(255 255 255 / 0.55);
+  --color-borde-suave: #000000;  /* Butcher Black: bordes finos */
+  --color-acento: #e10600;       /* Impossible Red: SOLO acciones y títulos */
+  --color-acento-hover: #ff1a12;
+  --color-sobre-acento: #ffffff;
+  --color-resalte: #ffc7c6;      /* Blush: píldoras, stickers, detalles */
+  --color-oscuro: #000000;       /* pie de página */
+  --color-sobre-oscuro: #ffffff;
+  /* Sin colores semánticos nuevos: los avisos usan rosa */
+  --color-exito: #ffc7c6;
+  --color-error: #ffc7c6;
+
+  --radius-control: 15px;        /* botones, píldoras, barra */
+  --radius-tarjeta: 12px;        /* tarjetas (38px en las destacadas) */
+
+  /* Animaciones */
+  --animate-flotar: flotar 7s ease-in-out infinite;
+  --animate-subir: subir 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+  @keyframes flotar {
+    0%, 100% { transform: translateY(0) rotate(-6deg); }
+    50% { transform: translateY(-18px) rotate(4deg); }
+  }
+  @keyframes subir {
+    from { opacity: 0; transform: translateY(60%); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  font-feature-settings: "calt" 0, "liga" 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Títulos: gigantes, condensados, en mayúsculas y rojos ----------
+   DESIGN.md: display 160px+ / tracking 0.06em. El interlineado se dejó en
+   0.9 para que las líneas no se monten (Anton tiene letras muy altas y tildes). */
+.titulo-display,
+.titulo-pagina,
+.titulo-seccion {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  color: var(--color-acento);
+}
+.titulo-display {
+  font-size: clamp(4.5rem, 14vw, 12rem);
+  line-height: 0.88;
+  letter-spacing: 0.06em;
+}
+.titulo-seccion {
+  font-size: clamp(3.5rem, 9vw, 6.5rem); /* heading-lg ≈ 103px */
+  line-height: 0.9;
+  letter-spacing: 0.03em;
+}
+.titulo-pagina {
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  line-height: 0.92;
+  letter-spacing: 0.03em;
+}
+
+/* Antetítulo con flechas ◂ … ▸ (DESIGN.md: section heading with bracket accents) */
+.antetitulo::before { content: "◂ "; }
+.antetitulo::after { content: " ▸"; }
+
+/* Etiquetas pequeñas en mayúsculas */
+.etiqueta {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-weight: 500;
+}
+
+/* Campos de formulario: transparentes con borde blanco */
+.campo {
+  background: transparent;
+  border-color: rgb(255 255 255 / 0.55);
+  color: #ffffff;
+}
+.campo:focus {
+  border-color: #ffffff;
+}
+.campo option {
+  background: #260212;
+}
+
+/* ---------- Recortes con formas (definidas en components/Formas.tsx) ---------- */
+.recorte-ondulado { clip-path: url(#ondulado); }
+.recorte-ondulado-animado { clip-path: url(#ondulado-animado); } /* solo las 4 fotos del hero */
+.recorte-festoneado { clip-path: url(#festoneado); }
+.recorte-punta { clip-path: url(#punta); }
+
+/* ---------- Animaciones al hacer scroll (solo CSS, sin JavaScript) ----------
+   animation-timeline: view() avanza la animación según cuánto del elemento
+   ya entró en pantalla. Si el navegador no lo soporta, se ve sin animación. */
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(48px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes abrirse {
+  from { transform: scaleY(0.06) scaleX(0.6); }
+  to { transform: none; }
+}
+@keyframes mostrarse {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@supports (animation-timeline: view()) {
+  /* Aparece subiendo */
+  .revelar {
+    animation: aparecer linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 25%;
+  }
+  /* Tarjeta que "se abre" desde una línea y luego muestra su contenido */
+  .abrir {
+    animation: abrirse linear both;
+    animation-timeline: view();
+    animation-range: entry 10% cover 35%;
+  }
+  .abrir > * {
+    animation: mostrarse linear both;
+    animation-timeline: view();
+    animation-range: cover 20% cover 40%;
+  }
+}
+
+/* Parallax: las fotos del hero suben a distinta velocidad al hacer scroll.
+   animation-timeline: scroll() lo calcula el navegador, sin JavaScript. */
+@keyframes parallax-lento { to { translate: 0 -150px; } }
+@keyframes parallax-rapido { to { translate: 0 -350px; } }
+@supports (animation-timeline: scroll()) {
+  .parallax-lento, .parallax-rapido {
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll();
+    animation-range: 0 1000px;
+  }
+  .parallax-lento { animation-name: parallax-lento; }
+  .parallax-rapido { animation-name: parallax-rapido; }
+}
+
+/* Sticker inclinado que se balancea */
+@keyframes balanceo {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(6deg); }
+}
+.sticker { animation: balanceo 3.5s ease-in-out infinite; }
+
+/* Mapa estilizado hecho solo con CSS (calles en diagonal) */
+.mapa {
+  background-color: #6b2b2e;
+  background-image:
+    repeating-linear-gradient(28deg, transparent 0 22px, rgb(255 199 198 / 0.55) 22px 25px),
+    repeating-linear-gradient(-62deg, transparent 0 46px, rgb(255 199 198 / 0.55) 46px 50px),
+    repeating-linear-gradient(28deg, transparent 0 140px, rgb(255 199 198 / 0.9) 140px 146px);
+}
+
+/* Carrusel: oculta la barra de scroll pero deja deslizar */
+.sin-barra {
+  scrollbar-width: none;
+}
+.sin-barra::-webkit-scrollbar {
+  display: none;
+}
+
+/* Respeta a quien pidió menos movimiento en su sistema */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-resalte);
+  outline-offset: 2px;
+}

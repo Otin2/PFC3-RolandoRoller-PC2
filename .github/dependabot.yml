@@ -1,0 +1,16 @@
+# Dependabot: revisa cada semana si hay versiones nuevas o vulnerables
+# de las dependencias y abre un Pull Request hacia develop.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
