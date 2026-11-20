@@ -19,7 +19,11 @@ export default async function Panel({
       <Encabezado
         antetitulo="Panel"
         titulo={`Hola, ${usuario.nombre}`}
-        descripcion={usuario.rol ? `Entraste como ${roles[usuario.rol].etiqueta.toLowerCase()}.` : undefined}
+        descripcion={
+          usuario.rol
+            ? `Entraste como ${roles[usuario.rol].etiqueta.toLowerCase()}${usuario.distrito ? ` · ${usuario.distrito}` : ""}.`
+            : undefined
+        }
       />
 
       <div className="flex flex-col gap-6 pb-12">
