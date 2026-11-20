@@ -54,6 +54,17 @@ Scripts: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`.
 
 Base de datos: ejecutar `supabase/schema.sql` en el SQL Editor de Supabase, registrar los usuarios de prueba desde `/registro` y luego ejecutar `supabase/seed.sql` (las instrucciones están al inicio del archivo).
 
+## Despliegue (Vercel)
+
+La app se despliega en Vercel desde la rama `main`, en la región `gru1` (São Paulo), igual que la base de datos (`vercel.json`). En *Project Settings → Environment Variables* se configuran, para Production, Preview y Development:
+
+| Variable | Valor |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto de Supabase (Project Settings → API) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave `anon` pública de Supabase |
+
+No se usa la clave `service_role`: la seguridad la da Row Level Security. Las fotos de los reportes se guardan en el bucket público `reportes` de Supabase Storage; la política de seguridad de contenido (CSP) solo permite imágenes propias, `blob:` (vista previa) y `*.supabase.co`.
+
 ## Estrategia de ramas
 
 - `main`: producción. Vercel despliega desde aquí.
