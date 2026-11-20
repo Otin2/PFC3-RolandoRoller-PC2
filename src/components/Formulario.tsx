@@ -37,13 +37,13 @@ export function Formulario({
         const error = estado.errores?.[campo.nombre];
         const valor = estado.valores?.[campo.nombre] ?? campo.valorInicial ?? "";
         const id = `campo-${campo.nombre}`;
-        const clases = `campo w-full rounded-control border bg-superficie px-4 py-3 text-base outline-none transition-colors placeholder:text-tenue focus:border-texto ${
+        const clases = `campo w-full rounded-control border bg-superficie px-4 py-2.5 text-base outline-none transition-colors placeholder:text-tenue focus:border-texto ${
           error ? "border-acento" : "border-borde"
         }`;
 
         return (
           <div key={campo.nombre} className="flex flex-col gap-1.5">
-            <label htmlFor={id} className="etiqueta text-sm font-medium text-resalte">
+            <label htmlFor={id} className="etiqueta text-sm text-texto">
               {campo.etiqueta}
             </label>
 

@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const esDesarrollo = process.env.NODE_ENV === "development";
 
 // Content-Security-Policy: solo se permite cargar recursos del propio sitio,
-// imágenes de Unsplash y conectarse a Supabase. 'unsafe-eval' solo en desarrollo.
+// imágenes y conectarse a Supabase. 'unsafe-eval' solo en desarrollo.
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${esDesarrollo ? " 'unsafe-eval'" : ""}`,
@@ -30,8 +30,12 @@ const cabecerasSeguridad = [
 const nextConfig: NextConfig = {
   poweredByHeader: false, // no revela que el sitio usa Next.js
   images: {
-    // Fotos libres de Unsplash (next/image las optimiza y las sirve desde el propio sitio)
-    remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }],
+    // Fotos de los reportes: viven en Supabase Storage (bucket público "reportes")
+    remotePatterns: [{ protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" }],
+  },
+  experimental: {
+    // La foto del reporte pesa hasta 5 MB y viaja en la server action
+    serverActions: { bodySizeLimit: "5mb" },
   },
   async headers() {
     return [{ source: "/:path*", headers: cabecerasSeguridad }];
