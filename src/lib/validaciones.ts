@@ -24,6 +24,8 @@ export const esquemaRegistro = esquemaLogin.extend({
     .max(80, { error: "Máximo 80 caracteres" }),
   // El admin NO se puede elegir al registrarse
   rol: z.enum(["vecino", "fiscalizador"], { error: "Elige un rol válido" }),
+  // Distrito de Lima Norte: el fiscalizador atiende SOLO su distrito
+  distrito: z.enum(distritos, { error: "Elige tu distrito" }),
 });
 
 // Convierte los errores de Zod en { campo: "mensaje" } para el formulario
@@ -36,5 +38,5 @@ export function erroresPorCampo(error: z.ZodError): Record<string, string> {
   return resultado;
 }
 
-// Distrito: debe ser uno de los 4 de Lima Norte (se usará en registro y reportes)
+// Distrito: debe ser uno de los 4 de Lima Norte (registro, mascotas y reportes)
 export const esquemaDistrito = z.enum(distritos, { error: "Elige un distrito" });
